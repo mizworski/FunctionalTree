@@ -15,8 +15,6 @@ int main(int argc, const char * argv[]) {
     auto root = Tree<int>::createValueNode(3, one, five);
     Tree<int> tree(root);
 
-    Tree<int>::g();
-
 //    tree.print(Tree<int>::inorder);
 //    tree.print(Tree<int>::preorder);
 //    tree.print(Tree<int>::postorder);
