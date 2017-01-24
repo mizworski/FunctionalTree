@@ -9,28 +9,31 @@ template<typename T>
 class Tree {
     using tsize = size_t;
     using tree_ptr = std::shared_ptr<Tree<T>>;
-    using tnode = Tree<T>;
+    using tnode = std::shared_ptr<Tree<T>>;//Tree<T>;
 public:
     /**
      * Creates empty tree.
      */
-    Tree() {}
+    Tree() : left_son_(nullptr), right_son_(nullptr), value_(0), is_set_(false) {}
 
     /**
      * Creates new tree with given root.
      * @param root root of new tree.
      */
-    Tree(tree_ptr root) {
-
+    Tree(tree_ptr root) : left_son_(root->left_son_),
+                          right_son_(root->right_son_),
+                          value_(root->value_),
+                          is_set_(root->is_set_) {
+//        std::cout << root->left_son_ << std::endl;
+//        std::cout << root->right_son_ << std::endl;
+//        std::cout << root->value_ << std::endl;
     }
 
     /**
      * Creates new tree which is deep copy of given tree.
      * @param other
      */
-    Tree(const Tree &other) {
-
-    }
+    Tree(const Tree &other) {}
 //    ~Tree() {}
 
     // todo const T& instead of T?
@@ -42,7 +45,11 @@ public:
      * @return  results of function invoked on root
      */
     T fold(std::function<T(T, T, T)> operation, T init) {
-        return init;
+        if (!is_set_) {
+            return init;
+        } else {
+            return operation(value_, left_son_->fold(operation, init), right_son_->fold(operation, init));
+        }
     }
 
     /**
@@ -130,15 +137,15 @@ public:
 
     //todo
     static tnode preorder(tnode node, std::stack<tnode> nodes_to_traverse) { //todo dlaczego nie stack &?
-        return Tree<T>();
+        return std::make_shared<Tree<T>>(Tree<T>());
     }
 
     static tnode inorder(tnode node, std::stack<tnode> nodes_to_traverse) {
-        return Tree<T>();
+        return std::make_shared<Tree<T>>(Tree<T>());
     }
 
     static tnode postorder(tnode node, std::stack<tnode> nodes_to_traverse) {
-        return Tree<T>();
+        return std::make_shared<Tree<T>>(Tree<T>());
     }
 
     /**
@@ -146,7 +153,7 @@ public:
      * @return empty node
      */
     static tnode createEmptyNode() {
-        return Tree<T>();
+        return std::make_shared<Tree<T>>(Tree<T>());
     }
 
     /**
@@ -155,7 +162,12 @@ public:
      * @return new node
      */
     static tnode createValueNode(T value) {
-        return Tree<T>();
+        Tree<T> t = Tree<T>(value);
+        tnode pt = std::make_shared<Tree<T>>(t);
+        Tree<T> wt = *pt;
+        std::cout << pt->value_ << std::endl;
+        return pt;
+
     }
 
     /**
@@ -166,11 +178,18 @@ public:
      * @return new node
      */
     static tnode createValueNode(T value, tnode left, tnode right) {
-        return Tree<T>();
+        auto t = Tree<T>(value, left, right);
+        return std::make_shared<Tree<T>>(t);
     }
 
+    Tree(T value) : left_son_(nullptr), right_son_(nullptr), value_(value), is_set_(true) {}
+    Tree(T value, tnode left, tnode right) : left_son_(left), right_son_(right), value_(value), is_set_(true) {}
 private:
 
+    tnode left_son_;
+    tnode right_son_;
+    T value_;
+    bool is_set_;
 };
 
 #endif //JNP7_TREE_H
