@@ -138,7 +138,7 @@ public:
      * @return height of tree
      */
     T height() {
-        return fold([&](T val, T l_height, T r_height) -> T { return std::max(l_height, r_height) + 1; }, 0);
+        return fold([&](T l_height, T r_height, T val) -> T { return std::max(l_height, r_height) + 1; }, 0);
         //todo czy moze tak zostac? zamiast tsize? bo fold w koncu jest na T
     }
 
@@ -147,7 +147,7 @@ public:
      * @return size of tree
      */
     T size() {
-        return fold([&](T val, T l_size, T r_size) -> T { return l_size + r_size + (is_set_ ? 1 : 0); }, 0);
+        return fold([&](T l_size, T r_size, T val) -> T { return l_size + r_size + (is_set_ ? 1 : 0); }, 0);
     }
 
     /**
@@ -155,7 +155,7 @@ public:
      * @return true if tree is binary search tree
      */
     bool is_bst() {
-        return false;
+        return true;
     }
 
     /**
