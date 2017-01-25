@@ -49,9 +49,13 @@ public:
      * Creates new tree which is deep copy of given tree.
      * @param other
      */
-    Tree(const Tree &other) {
-//        std::cout << "copy" << std::endl;
-
+    Tree(const Tree &other) : value_(other.value_), is_set_(other.is_set_) {
+        if (is_set_) {
+            auto l = Tree<T>(other.left_son_);
+            auto r = Tree<T>(other.right_son_);
+            left_son_ = std::make_shared<Tree<T>>(l);
+            right_son_ = std::make_shared<Tree<T>>(r);
+        }
     }
 
     Tree(Tree &&other) : value_(other.value_),
@@ -68,7 +72,7 @@ public:
      * @return  results of function invoked on root
      */
     T fold(std::function<T(T, T, T)> operation, T init) {
-        if (!is_set_) { //todo this == nullptr
+        if (!is_set_) {
             return init;
         } else {
             return operation(left_son_->fold(operation, init), right_son_->fold(operation, init), value_);
