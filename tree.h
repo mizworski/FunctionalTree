@@ -5,8 +5,6 @@
 #include <memory>
 #include <stack>
 
-#define CALL_MEMBER_FN(object, ptrToMember)  ((object).*(ptrToMember))
-
 template<typename T>
 class Tree;
 
@@ -56,9 +54,7 @@ public:
     Tree(Tree &&other) : value_(other.value_),
                          left_son_(other.left_son_),
                          right_son_(other.right_son_),
-                         is_set_(other.is_set_) {
-//        std::cout << "movee" << std::endl;
-    }
+                         is_set_(other.is_set_) {}
 
     // todo const T& instead of T?
     /**
@@ -125,7 +121,7 @@ public:
      */
     void apply(std::function<void(T)> operation, std::function<traversal_ptr(node_smart_ptr)> traversal) {
         auto tp = std::make_shared<Tree<T>>(std::move(*this)); //todo
-        std::shared_ptr<Traversal<T>> it = traversal(tp);
+        auto it = traversal(tp);
 
         for (auto node = it->get_next(); node != nullptr; node = it->get_next()) {
             if (node->is_set_) {
@@ -133,9 +129,6 @@ public:
             }
         }
     }
-
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "IncompatibleTypes"
 
     /**
      * Gets height of tree which is maximal distance between root and leaf.
@@ -146,14 +139,12 @@ public:
         //todo czy moze tak zostac? zamiast tsize? bo fold w koncu jest na T
     }
 
-#pragma clang diagnostic pop
-
     /**
      * Gets size of tree which is number of nodes in that tree.
      * @return size of tree
      */
-    tsize size() {
-        return fold([&](T val, T l_size, T r_size) -> T { return l_size + r_size + (is_set() ? 1 : 0); }, 0);
+    T size() {
+        return fold([&](T val, T l_size, T r_size) -> T { return l_size + r_size + (is_set_ ? 1 : 0); }, 0);
     }
 
     /**
@@ -168,10 +159,54 @@ public:
      * Prints value in each node of tree in given order. By default goes in order through tree.
      * @param traversal function which determines traversal
      */
-    void print(traversal_ptr traversal) {
-
+    void print(std::function<traversal_ptr(node_smart_ptr)> traversal = inorder) {
+        apply([] (T val) { std::cout << val << " "; }, traversal);
+        std::cout << std::endl;
     }
 
+
+    //todo
+    static traversal_ptr preorder(node_smart_ptr node) {
+        return std::make_shared<PreOrder>(PreOrder(node));
+    }
+
+    static traversal_ptr inorder(node_smart_ptr node) {
+        return std::make_shared<InOrder>(InOrder(node));
+    }
+
+    static traversal_ptr postorder(node_smart_ptr node) {
+        return std::make_shared<PostOrder>(PostOrder(node));
+    }
+
+    /**
+     * Creates empty node.
+     * @return empty node
+     */
+    static node_smart_ptr createEmptyNode() {
+        return std::make_shared<Tree<T>>(Tree<T>());
+    }
+
+    /**
+     * Creates node with given value.
+     * @param value value of new node
+     * @return new node
+     */
+    static node_smart_ptr createValueNode(T value) {
+        return std::make_shared<Tree<T>>(Tree<T>(value));
+    }
+
+    /**
+     * Creates node with given value and descendants.
+     * @param value value of new node
+     * @param left left son
+     * @param right right son
+     * @return new node
+     */
+    static node_smart_ptr createValueNode(T value, node_smart_ptr left, node_smart_ptr right) {
+        return std::make_shared<Tree<T>>(Tree<T>(value, left, right));
+    }
+
+private:
     class PreOrder : public Traversal<T> {
     public:
         PreOrder(node_smart_ptr root) {
@@ -276,56 +311,14 @@ public:
         }
     };
 
-    //todo
-    static traversal_ptr preorder(node_smart_ptr node) {
-        return std::make_shared<PreOrder>(PreOrder(node));
-    }
+    Tree(T value) : left_son_(createEmptyNode()),
+                    right_son_(createEmptyNode()),
+                    value_(value),
+                    is_set_(true) {}
 
-    static traversal_ptr inorder(node_smart_ptr node) {
-        return std::make_shared<InOrder>(InOrder(node));
-    }
-
-    static traversal_ptr postorder(node_smart_ptr node) {
-        return std::make_shared<PostOrder>(PostOrder(node));
-    }
-
-    /**
-     * Creates empty node.
-     * @return empty node
-     */
-    static node_smart_ptr createEmptyNode() {
-        return std::make_shared<Tree<T>>(Tree<T>());
-    }
-
-    /**
-     * Creates node with given value.
-     * @param value value of new node
-     * @return new node
-     */
-    static node_smart_ptr createValueNode(T value) {
-        return std::make_shared<Tree<T>>(Tree<T>(value));
-    }
-
-    /**
-     * Creates node with given value and descendants.
-     * @param value value of new node
-     * @param left left son
-     * @param right right son
-     * @return new node
-     */
-    static node_smart_ptr createValueNode(T value, node_smart_ptr left, node_smart_ptr right) {
-        return std::make_shared<Tree<T>>(Tree<T>(value, left, right));
-    }
-
-    bool is_set() const {
-        return is_set_;
-    }
-
-
-private:
-    Tree(T value) : left_son_(createEmptyNode()), right_son_(createEmptyNode()), value_(value), is_set_(true) {}
-
-    Tree(T value, node_smart_ptr left, node_smart_ptr right) : left_son_(left), right_son_(right), value_(value),
+    Tree(T value, node_smart_ptr left, node_smart_ptr right) : left_son_(left),
+                                                               right_son_(right),
+                                                               value_(value),
                                                                is_set_(true) {}
 
     node_smart_ptr left_son_;

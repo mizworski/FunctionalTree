@@ -16,9 +16,9 @@ int main(int argc, const char * argv[]) {
     auto root = Tree<int>::createValueNode(3, one, five);
     Tree<int> tree(root);
 
-//    tree.print(Tree<int>::inorder);
-//    tree.print(Tree<int>::preorder);
-//    tree.print(Tree<int>::postorder);
+    tree.print(Tree<int>::inorder);
+    tree.print(Tree<int>::preorder);
+    tree.print(Tree<int>::postorder);
 
     std::cout << "size: " << tree.size() << std::endl;
     std::cout << "height: " << tree.height() << std::endl;
