@@ -67,7 +67,6 @@ public:
                          right_son_(other.right_son_),
                          is_set_(other.is_set_) {}
 
-    // todo const T& instead of T?
     /**
      * Invokes given operation on tree in post order traversal and returns its result.
      * @param   operation ternary function which is applied to node value,
@@ -75,7 +74,7 @@ public:
      * @param   init value of empty node
      * @return  results of function invoked on root
      */
-    T fold(std::function<T(T, T, T)> operation, T init) {
+    T fold(std::function<T(T, T, T)> operation, T init) const {
         if (!is_set_) {
             return init;
         } else {
@@ -121,8 +120,8 @@ public:
      */
     T accumulate(std::function<T(T, T)> operation,
                  T init,
-                 std::function<traversal_ptr(node_smart_ptr)> traversal) { //todo traversal type?
-        auto tp = std::make_shared<Tree<T>>(std::move(*this)); //todo
+                 std::function<traversal_ptr(node_smart_ptr)> traversal) const {
+        auto tp = std::make_shared<Tree<T>>(std::move(*this));
         auto it = traversal(tp);
 
         for (auto node = it->get_next(); node != nullptr; node = it->get_next()) {
@@ -139,7 +138,7 @@ public:
      * @param operation     function which will be applied
      * @param traversal     function which determines traversal
      */
-    void apply(std::function<void(T)> operation, std::function<traversal_ptr(node_smart_ptr)> traversal) {
+    void apply(std::function<void(T)> operation, std::function<traversal_ptr(node_smart_ptr)> traversal) const {
         auto tp = std::make_shared<Tree<T>>(std::move(*this));
         auto it = traversal(tp);
 
@@ -154,16 +153,15 @@ public:
      * Gets height of tree which is maximal distance between root and leaf.
      * @return height of tree
      */
-    T height() {
+    T height() const {
         return fold([&](T l_height, T r_height, T val) -> T { return std::max(l_height, r_height) + 1; }, 0);
-        //todo czy moze tak zostac? zamiast tsize? bo fold w koncu jest na T
     }
 
     /**
      * Gets size of tree which is number of nodes in that tree.
      * @return size of tree
      */
-    T size() {
+    T size() const {
         return fold([&](T l_size, T r_size, T val) -> T { return l_size + r_size + (is_set_ ? 1 : 0); }, 0);
     }
 
@@ -171,7 +169,7 @@ public:
      * Checks if tree is binary search tree.
      * @return true if tree is binary search tree
      */
-    bool is_bst() {
+    bool is_bst() const {
         if (!is_set_) {
             return true;
         }
@@ -191,7 +189,7 @@ public:
      * Prints value in each node of tree in given order. By default goes in order through tree.
      * @param traversal function which determines traversal
      */
-    void print(std::function<traversal_ptr(node_smart_ptr)> traversal = inorder) {
+    void print(std::function<traversal_ptr(node_smart_ptr)> traversal = inorder) const {
         apply([](T val) { std::cout << val << " "; }, traversal);
         std::cout << std::endl;
     }
