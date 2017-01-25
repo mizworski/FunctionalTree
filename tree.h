@@ -4,13 +4,18 @@
 #include <memory>
 #include <stack>
 
+#define CALL_MEMBER_FN(object, ptrToMember)  ((object).*(ptrToMember))
+
 template<typename T>
 class Tree;
 
 template<typename T>
 class Traversal {
 public:
-    virtual std::shared_ptr<Tree<T>> operator()() {}
+    virtual std::shared_ptr<Tree<T>> operator()() {
+        std::cout << "dupa" << std::endl;
+        return nullptr;
+    };
 protected:
     std::stack<std::shared_ptr<Tree<T>>> nodes_;
 };
@@ -109,19 +114,29 @@ public:
      * @param traversal     function which determines traversal
      */
     void apply(std::function<void(T)> operation, std::function<travelsal_order(tnode)> traversal) {
+        auto it = traversal(std::make_shared<Tree<T>>(*this));
+        auto t = *it;
 
+        auto x = t();
+        auto y = t();
+        auto xv = x->value_;
+        auto yv = y->value_;
+
+        std::cout << "dupa" << std::endl;
     }
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "IncompatibleTypes"
+
     /**
      * Gets height of tree which is maximal distance between root and leaf.
      * @return height of tree
      */
     T height() {
-        return fold([&] (T val, T l_height, T r_height) -> T { return std::max(l_height, r_height) + 1; }, 0);
+        return fold([&](T val, T l_height, T r_height) -> T { return std::max(l_height, r_height) + 1; }, 0);
         //todo czy moze tak zostac? zamiast tsize? bo fold w koncu jest na T
     }
+
 #pragma clang diagnostic pop
 
     /**
@@ -129,7 +144,7 @@ public:
      * @return size of tree
      */
     tsize size() {
-        return fold([&] (T val, T l_size, T r_size) -> T { return l_size + r_size + (is_set() ? 1 : 0); }, 0);
+        return fold([&](T val, T l_size, T r_size) -> T { return l_size + r_size + (is_set() ? 1 : 0); }, 0);
     }
 
     /**
@@ -165,7 +180,7 @@ public:
         tnode operator()() override {
             tnode node = this->nodes_.top();
             this->nodes_.pop();
-            if (node->right_son_!= nullptr) this->nodes_.push(node->right_son_);
+            if (node->right_son_ != nullptr) this->nodes_.push(node->right_son_);
             if (node->left_son_ != nullptr) this->nodes_.push(node->left_son_);
             this->nodes_.push(node);
 
@@ -190,9 +205,10 @@ public:
         }
 
         tnode operator()() override {
+            std::cout << "dupa" << std::endl;
             tnode node = this->nodes_.top();
             this->nodes_.pop();
-            if (node->right_son_!= nullptr) this->nodes_.push(node->right_son_);
+            if (node->right_son_ != nullptr) this->nodes_.push(node->right_son_);
             this->nodes_.push(node);
             if (node->left_son_ != nullptr) this->nodes_.push(node->left_son_);
 
@@ -220,7 +236,7 @@ public:
             tnode node = this->nodes_.top();
             this->nodes_.pop();
             this->nodes_.push(node);
-            if (node->right_son_!= nullptr) this->nodes_.push(node->right_son_);
+            if (node->right_son_ != nullptr) this->nodes_.push(node->right_son_);
             if (node->left_son_ != nullptr) this->nodes_.push(node->left_son_);
 
             node = this->nodes_.top();
@@ -273,6 +289,7 @@ public:
     bool is_set() const {
         return is_set_;
     }
+
 private:
     Tree(T value) : left_son_(nullptr), right_son_(nullptr), value_(value), is_set_(true) {}
 
