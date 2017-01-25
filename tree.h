@@ -31,15 +31,18 @@ public:
     /**
      * Creates empty tree.
      */
-    Tree() : left_son_(nullptr), right_son_(nullptr), value_(0), is_set_(false) {}
+    Tree() : value_(0),
+             left_son_(nullptr),
+             right_son_(nullptr),
+             is_set_(false) {}
 
     /**
      * Creates new tree with given root.
      * @param root root of new tree.
      */
-    Tree(node_smart_ptr root) : left_son_(root->left_son_),
+    Tree(node_smart_ptr root) : value_(root->value_),
+                                left_son_(root->left_son_),
                                 right_son_(root->right_son_),
-                                value_(root->value_),
                                 is_set_(root->is_set_) {}
 
     /**
@@ -65,7 +68,7 @@ public:
      * @return  results of function invoked on root
      */
     T fold(std::function<T(T, T, T)> operation, T init) {
-        if (this == nullptr || !is_set_) { //todo this == nullptr
+        if (!is_set_) { //todo this == nullptr
             return init;
         } else {
             return operation(left_son_->fold(operation, init), right_son_->fold(operation, init), value_);
@@ -160,7 +163,7 @@ public:
      * @param traversal function which determines traversal
      */
     void print(std::function<traversal_ptr(node_smart_ptr)> traversal = inorder) {
-        apply([] (T val) { std::cout << val << " "; }, traversal);
+        apply([](T val) { std::cout << val << " "; }, traversal);
         std::cout << std::endl;
     }
 
@@ -311,19 +314,19 @@ private:
         }
     };
 
-    Tree(T value) : left_son_(createEmptyNode()),
+    Tree(T value) : value_(value),
+                    left_son_(createEmptyNode()),
                     right_son_(createEmptyNode()),
-                    value_(value),
                     is_set_(true) {}
 
-    Tree(T value, node_smart_ptr left, node_smart_ptr right) : left_son_(left),
+    Tree(T value, node_smart_ptr left, node_smart_ptr right) : value_(value),
+                                                               left_son_(left),
                                                                right_son_(right),
-                                                               value_(value),
                                                                is_set_(true) {}
 
+    T value_;
     node_smart_ptr left_son_;
     node_smart_ptr right_son_;
-    T value_;
     bool is_set_;
 };
 
