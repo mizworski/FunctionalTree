@@ -118,6 +118,15 @@ public:
     T accumulate(std::function<T(T, T)> operation,
                  T init,
                  std::function<traversal_ptr(node_smart_ptr)> traversal) { //todo traversal type?
+        auto tp = std::make_shared<Tree<T>>(std::move(*this)); //todo
+        auto it = traversal(tp);
+
+        for (auto node = it->get_next(); node != nullptr; node = it->get_next()) {
+            if (node->is_set_) {
+                init = operation(node->value_, init);
+            }
+        }
+
         return init;
     }
 
