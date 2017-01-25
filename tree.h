@@ -47,7 +47,7 @@ public:
 
     /**
      * Creates new tree which is deep copy of given tree.
-     * @param other
+     * @param other tree to copy
      */
     Tree(const Tree &other) : value_(other.value_), is_set_(other.is_set_) {
         if (is_set_) {
@@ -58,6 +58,10 @@ public:
         }
     }
 
+    /**
+     * Creates new tree which points to same descendants as root of copied tree.
+     * @param other tree to copy
+     */
     Tree(Tree &&other) : value_(other.value_),
                          left_son_(other.left_son_),
                          right_son_(other.right_son_),
@@ -136,7 +140,7 @@ public:
      * @param traversal     function which determines traversal
      */
     void apply(std::function<void(T)> operation, std::function<traversal_ptr(node_smart_ptr)> traversal) {
-        auto tp = std::make_shared<Tree<T>>(std::move(*this)); //todo
+        auto tp = std::make_shared<Tree<T>>(std::move(*this));
         auto it = traversal(tp);
 
         for (auto node = it->get_next(); node != nullptr; node = it->get_next()) {
@@ -168,7 +172,19 @@ public:
      * @return true if tree is binary search tree
      */
     bool is_bst() {
-        return true;
+        if (!is_set_) {
+            return true;
+        }
+
+        if (left_son_->is_set_ && left_son_->value_ > value_) {
+            return false;
+        }
+
+        if (right_son_->is_set_ && right_son_->value_ < value_) {
+            return false;
+        }
+
+        return left_son_->is_bst() && right_son_->is_bst();
     }
 
     /**
@@ -179,7 +195,6 @@ public:
         apply([](T val) { std::cout << val << " "; }, traversal);
         std::cout << std::endl;
     }
-
 
     //todo
     static traversal_ptr preorder(node_smart_ptr node) {
