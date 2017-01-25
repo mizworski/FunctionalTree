@@ -1,15 +1,27 @@
 #ifndef JNP7_TREE_H
 #define JNP7_TREE_H
 
-
 #include <memory>
 #include <stack>
 
 template<typename T>
+class Tree;
+
+template<typename T>
+class Traversal {
+public:
+    virtual std::shared_ptr<Tree<T>> operator()() {}
+protected:
+    std::stack<std::shared_ptr<Tree<T>>> nodes_;
+};
+
+
+template<typename T>
 class Tree {
-    using tsize = size_t;
+    using tsize = T;
     using tree_ptr = std::shared_ptr<Tree<T>>;
-    using tnode = std::shared_ptr<Tree<T>>;//Tree<T>;
+    using tnode = std::shared_ptr<Tree<T>>;
+    using travelsal_order = std::shared_ptr<Traversal<T>>;
 public:
     /**
      * Creates empty tree.
@@ -25,20 +37,13 @@ public:
                           value_(root->value_),
                           is_set_(root->is_set_) {}
 
-
     /**
      * Creates new tree which is deep copy of given tree.
      * @param other
      */
-    Tree(const Tree &other) {
-        std::cout << "cont ref" << std::endl;
+    Tree(const Tree &other) {}
 
-    }
-
-    Tree(Tree &&other) : Tree(other.value_, other.left_son_, other.right_son_) {
-        std::cout << "rvalue" << std::endl;
-    }
-//    ~Tree() {}
+    Tree(Tree &&other) : Tree(other.value_, other.left_son_, other.right_son_) {}
 
     // todo const T& instead of T?
     /**
@@ -49,10 +54,10 @@ public:
      * @return  results of function invoked on root
      */
     T fold(std::function<T(T, T, T)> operation, T init) {
-        if (!is_set_) {
+        if (this == nullptr || !is_set_) { //todo this == nullptr
             return init;
         } else {
-            return operation(value_, left_son_->fold(operation, init), right_son_->fold(operation, init));
+            return operation(left_son_->fold(operation, init), right_son_->fold(operation, init), value_);
         }
     }
 
@@ -94,7 +99,7 @@ public:
      */
     T accumulate(std::function<T(T, T)> operation,
                  T init,
-                 std::function<tnode(tnode, std::stack<tnode> &)> traversal) { //todo traversal type?
+                 std::function<travelsal_order(tnode)> traversal) { //todo traversal type?
         return init;
     }
 
@@ -103,24 +108,28 @@ public:
      * @param operation     function which will be applied
      * @param traversal     function which determines traversal
      */
-    void apply(std::function<void(T)> operation, std::function<tnode(tnode, std::stack<tnode> &)> traversal) {
+    void apply(std::function<void(T)> operation, std::function<travelsal_order(tnode)> traversal) {
 
     }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "IncompatibleTypes"
     /**
      * Gets height of tree which is maximal distance between root and leaf.
      * @return height of tree
      */
-    tsize height() {
-        return 0;
+    T height() {
+        return fold([&] (T val, T l_height, T r_height) -> T { return std::max(l_height, r_height) + 1; }, 0);
+        //todo czy moze tak zostac? zamiast tsize? bo fold w koncu jest na T
     }
+#pragma clang diagnostic pop
 
     /**
      * Gets size of tree which is number of nodes in that tree.
      * @return size of tree
      */
     tsize size() {
-        return 0;
+        return fold([&] (T val, T l_size, T r_size) -> T { return l_size + r_size + (is_set() ? 1 : 0); }, 0);
     }
 
     /**
@@ -135,21 +144,102 @@ public:
      * Prints value in each node of tree in given order. By default goes in order through tree.
      * @param traversal function which determines traversal
      */
-    void print(std::function<tnode(tnode, std::stack<tnode> &)> traversal = Tree<T>::inorder) {
+    void print(travelsal_order traversal) {
 
     }
+
+    class PreOrder : public Traversal<T> {
+    public:
+        PreOrder(tnode root) {
+            if (root != nullptr) {
+                if (root->right_son_ != nullptr) this->nodes_.push(root->right_son_);
+                if (root->left_son_ != nullptr) this->nodes_.push(root->left_son_);
+                this->nodes_.push(root);
+            }
+        }
+
+        PreOrder(PreOrder &&other) {
+            this->nodes_ = other.nodes_;
+        }
+
+        tnode operator()() override {
+            tnode node = this->nodes_.top();
+            this->nodes_.pop();
+            if (node->right_son_!= nullptr) this->nodes_.push(node->right_son_);
+            if (node->left_son_ != nullptr) this->nodes_.push(node->left_son_);
+            this->nodes_.push(node);
+
+            node = this->nodes_.top();
+            this->nodes_.pop();
+            return node;
+        }
+    };
+
+    class InOrder : public Traversal<T> {
+    public:
+        InOrder(tnode root) {
+            if (root != nullptr) {
+                if (root->right_son_ != nullptr) this->nodes_.push(root->right_son_);
+                this->nodes_.push(root);
+                if (root->left_son_ != nullptr) this->nodes_.push(root->left_son_);
+            }
+        }
+
+        InOrder(InOrder &&other) {
+            this->nodes_ = other.nodes_;
+        }
+
+        tnode operator()() override {
+            tnode node = this->nodes_.top();
+            this->nodes_.pop();
+            if (node->right_son_!= nullptr) this->nodes_.push(node->right_son_);
+            this->nodes_.push(node);
+            if (node->left_son_ != nullptr) this->nodes_.push(node->left_son_);
+
+            node = this->nodes_.top();
+            this->nodes_.pop();
+            return node;
+        }
+    };
+
+    class PostOrder : public Traversal<T> {
+    public:
+        PostOrder(tnode root) {
+            if (root != nullptr) {
+                this->nodes_.push(root);
+                if (root->right_son_ != nullptr) this->nodes_.push(root->right_son_);
+                if (root->left_son_ != nullptr) this->nodes_.push(root->left_son_);
+            }
+        }
+
+        PostOrder(PostOrder &&other) {
+            this->nodes_ = other.nodes_;
+        }
+
+        tnode operator()() override {
+            tnode node = this->nodes_.top();
+            this->nodes_.pop();
+            this->nodes_.push(node);
+            if (node->right_son_!= nullptr) this->nodes_.push(node->right_son_);
+            if (node->left_son_ != nullptr) this->nodes_.push(node->left_son_);
+
+            node = this->nodes_.top();
+            this->nodes_.pop();
+            return node;
+        }
+    };
 
     //todo
-    static tnode preorder(tnode node, std::stack<tnode> nodes_to_traverse) { //todo dlaczego nie stack &?
-        return std::make_shared<Tree<T>>(Tree<T>());
+    static travelsal_order preorder(tnode node) {
+        return std::make_shared<Traversal<T>>(PreOrder(node));
     }
 
-    static tnode inorder(tnode node, std::stack<tnode> nodes_to_traverse) {
-        return std::make_shared<Tree<T>>(Tree<T>());
+    static travelsal_order inorder(tnode node) {
+        return std::make_shared<Traversal<T>>(InOrder(node));
     }
 
-    static tnode postorder(tnode node, std::stack<tnode> nodes_to_traverse) {
-        return std::make_shared<Tree<T>>(Tree<T>());
+    static travelsal_order postorder(tnode node) {
+        return std::make_shared<Traversal<T>>(PostOrder(node));
     }
 
     /**
@@ -167,7 +257,6 @@ public:
      */
     static tnode createValueNode(T value) {
         return std::make_shared<Tree<T>>(Tree<T>(value));
-
     }
 
     /**
@@ -181,7 +270,9 @@ public:
         return std::make_shared<Tree<T>>(Tree<T>(value, left, right));
     }
 
-
+    bool is_set() const {
+        return is_set_;
+    }
 private:
     Tree(T value) : left_son_(nullptr), right_son_(nullptr), value_(value), is_set_(true) {}
 
