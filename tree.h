@@ -295,11 +295,12 @@ public:
         return std::make_shared<Tree<T>>(Tree<T>(value, left, right));
     }
 
+    /// These two methods below had to be public in order to lazy map work.
     /**
- * Returns new node with given lazy function.
- * @param lazy_function lazy function of new node
- * @return              new node
- */
+    * Returns new node with given lazy function.
+    * @param lazy_function lazy function of new node
+    * @return              new node
+    */
     static node_ptr createValueNode(std::function<T()> const &lazy_function) {
         return std::make_shared<Tree<T>>(Tree<T>(lazy_function));
     }
