@@ -24,12 +24,12 @@ public:
      * Creates new tree with given root.
      * @param root root of new tree.
      */
-    Tree(node_ptr const &root) : value_(root->value_),
-                                 lazy_function_(root->lazy_function_),
-                                 left_son_(root->left_son_),
-                                 right_son_(root->right_son_),
-                                 is_set_(root->is_set_),
-                                 is_initialized_(root->is_initialized_) {}
+    Tree(node_ptr root) : value_(root->value_),
+                          lazy_function_(root->lazy_function_),
+                          left_son_(root->left_son_),
+                          right_son_(root->right_son_),
+                          is_set_(root->is_set_),
+                          is_initialized_(root->is_initialized_) {}
 
     /**
      * Creates new tree which is deep copy of given tree.
@@ -66,7 +66,7 @@ public:
      * @return  results of function invoked on root
      */
     template<typename F, typename S>
-    S fold(F const &operation, S init) {
+    S fold(F operation, S init) {
         if (!is_set_) {
             return init;
         } else {
@@ -83,8 +83,8 @@ public:
      * @param   predicate function taking value of node and returning boolean
      * @return  new tree
      */
-    Tree filter(std::function<bool(T)> const &predicate) {
-        auto lambda = [&predicate](T value, node_ptr const &left, node_ptr const &right) -> node_ptr {
+    Tree filter(std::function<bool(T)> predicate) {
+        auto lambda = [&predicate](T value, node_ptr left, node_ptr right) -> node_ptr {
             if (predicate(value)) {
                 return std::make_shared<Tree>(Tree(value, left, right));
             }
@@ -114,11 +114,11 @@ public:
      * @return              new tree
      */
     template<typename F>
-    auto map(F const &transformer) {
+    auto map(F transformer) {
         using S = typename std::result_of<F(T)>::type;
         auto lambda = ([&](T t,
-                           std::shared_ptr<Tree<S>> const &l,
-                           std::shared_ptr<Tree<S>> const &r) -> std::shared_ptr<Tree<S>> {
+                           std::shared_ptr<Tree<S>> l,
+                           std::shared_ptr<Tree<S>> r) -> std::shared_ptr<Tree<S>> {
             return Tree<S>::createValueNode(transformer(t), l, r);
         });
         return Tree<S>(fold(lambda, Tree<S>::createEmptyNode()));
@@ -131,11 +131,11 @@ public:
      * @return              new tree
      */
     template<typename F>
-    auto lazy_map(F const &transformer) {
+    auto lazy_map(F transformer) {
         using S = typename std::result_of<F(T)>::type;
         auto lambda = ([&](T t,
-                           std::shared_ptr<Tree<S>> const &l,
-                           std::shared_ptr<Tree<S>> const &r) -> std::shared_ptr<Tree<S>> {
+                           std::shared_ptr<Tree<S>> l,
+                           std::shared_ptr<Tree<S>> r) -> std::shared_ptr<Tree<S>> {
             return Tree<S>::createValueNode(
                     [t, transformer]() -> S {
                         return transformer(t);
@@ -153,7 +153,7 @@ public:
      * @return              value of accumulator after traversing tree
      */
     template<typename F, typename S>
-    S accumulate(F const &operation, S init, traversal const &traversal) const {
+    S accumulate(F operation, S init, traversal traversal) const {
         S accumulator = init;
 
         auto lambda = [&accumulator, &operation](T value) {
@@ -170,7 +170,7 @@ public:
      * @param operation     function which will be applied
      * @param traversal     function which determines traversal
      */
-    void apply(std::function<void(T)> const &operation, traversal const &traversal) const {
+    void apply(std::function<void(T)> operation, traversal traversal) const {
         traversal(operation, std::make_shared<Tree<T>>(std::move(*this)));
     }
 
@@ -219,7 +219,7 @@ public:
      * @param traversal function which determines traversal
      */
 
-    void print(traversal const &traversal = inorder) const {
+    void print(traversal traversal = inorder) const {
         apply([](T val) { std::cout << val << " "; }, traversal);
         std::cout << std::endl;
     }
@@ -229,7 +229,7 @@ public:
     * @param operation  unary operation to be applied
     * @param node       node to start from
     */
-    static void preorder(std::function<void(T)> const &operation, node_ptr const &node) {
+    static void preorder(std::function<void(T)> operation, node_ptr node) {
         if (node == nullptr || !node->is_set_) {
             return;
         }
@@ -244,7 +244,7 @@ public:
      * @param operation unary operation to be applied
      * @param node      node to start from
      */
-    static void inorder(std::function<void(T)> const &operation, node_ptr const &node) {
+    static void inorder(std::function<void(T)> operation, node_ptr node) {
         if (node == nullptr || !node->is_set_) {
             return;
         }
@@ -259,7 +259,7 @@ public:
      * @param operation unary operation to be applied
      * @param node      node to start from
      */
-    static void postorder(std::function<void(T)> const &operation, node_ptr const &node) {
+    static void postorder(std::function<void(T)> operation, node_ptr node) {
         if (node == nullptr || !node->is_set_) {
             return;
         }
@@ -293,7 +293,7 @@ public:
      * @param right     right son
      * @return new      node
      */
-    static node_ptr createValueNode(T value, node_ptr const &left, node_ptr const &right) {
+    static node_ptr createValueNode(T value, node_ptr left, node_ptr right) {
         return std::make_shared<Tree<T>>(Tree<T>(value, left, right));
     }
 
@@ -303,7 +303,7 @@ public:
     * @param lazy_function lazy function of new node
     * @return              new node
     */
-    static node_ptr createValueNode(std::function<T()> const &lazy_function) {
+    static node_ptr createValueNode(std::function<T()> lazy_function) {
         return std::make_shared<Tree<T>>(Tree<T>(lazy_function));
     }
 
@@ -314,9 +314,9 @@ public:
     * @param right         right son
     * @return              new node
     */
-    static node_ptr createValueNode(std::function<T()> const &lazy_function,
-                                    node_ptr const &left,
-                                    node_ptr const &right) {
+    static node_ptr createValueNode(std::function<T()> lazy_function,
+                                    node_ptr left,
+                                    node_ptr right) {
         return std::make_shared<Tree<T>>(Tree<T>(lazy_function, left, right));
     }
 
@@ -335,33 +335,33 @@ private:
      * Creates node with given children and value.
      * @param value value of new node
      */
-    Tree(T value, node_ptr const &left, node_ptr const &right) : value_(value),
-                                                                 left_son_(left),
-                                                                 right_son_(right),
-                                                                 is_set_(true),
-                                                                 is_initialized_(true) {}
+    Tree(T value, node_ptr left, node_ptr right) : value_(value),
+                                                   left_son_(left),
+                                                   right_son_(right),
+                                                   is_set_(true),
+                                                   is_initialized_(true) {}
 
     /**
      * Creates node with empty nodes as children and given function as its lazy function.
      * @param value value of new node
      */
-    Tree(std::function<T()> const &lazy_function) : lazy_function_(lazy_function),
-                                                    left_son_(createEmptyNode()),
-                                                    right_son_(createEmptyNode()),
-                                                    is_set_(true),
-                                                    is_initialized_(false) {}
+    Tree(std::function<T()> lazy_function) : lazy_function_(lazy_function),
+                                             left_son_(createEmptyNode()),
+                                             right_son_(createEmptyNode()),
+                                             is_set_(true),
+                                             is_initialized_(false) {}
 
     /**
      * Creates node with given nodes as children and function as its lazy function.
      * @param value value of new node
      */
-    Tree(std::function<T()> const &lazy_function,
-         node_ptr const &left,
-         node_ptr const &right) : lazy_function_(lazy_function),
-                                  left_son_(left),
-                                  right_son_(right),
-                                  is_set_(true),
-                                  is_initialized_(false) {}
+    Tree(std::function<T()> lazy_function,
+         node_ptr left,
+         node_ptr right) : lazy_function_(lazy_function),
+                           left_son_(left),
+                           right_son_(right),
+                           is_set_(true),
+                           is_initialized_(false) {}
 
     /**
      * Gets value of node. Initializes that value if not initialized before.

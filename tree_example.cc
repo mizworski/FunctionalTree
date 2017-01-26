@@ -2,7 +2,7 @@
 #include <functional>
 #include <sstream>
 #include <string>
-
+#include <type_traits>
 #include "tree.h"
 
 void testMap() {
@@ -18,8 +18,13 @@ void testMap() {
     auto t2 = tree.lazy_map([&](int val) ->double {return static_cast<double>(val) / x;});
     treeDouble.print();
     x = 5;
-    t2.print();
 
+    auto t3 = t2;
+    auto t4(t2);
+    x = 10;
+    t2.print();
+    t3.print();
+    t4.print();
 
 }
 
