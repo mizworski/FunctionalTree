@@ -41,8 +41,8 @@ int main(int argc, const char *argv[]) {
     std::cout << "odd: ";
     odd.print();
 
-    int sum1 = tree.accumulate(std::plus<int>(), 0, Tree<int>::inorder);
-    std::cout << "sum: " << sum1 << std::endl;
+//    int sum1 = tree.accumulate(std::plus<int>(), 0, Tree<int>::inorder);
+//    std::cout << "sum: " << sum1 << std::endl;
 
     int sum2 = tree.fold([](int val, int l, int r) -> int { return val + l + r; }, 0);
     std::cout << "sum: " << sum2 << std::endl;

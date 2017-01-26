@@ -8,25 +8,27 @@
 template<typename T>
 class Tree;
 
+/*
 template<typename T>
-class Traversal {
+class   Traversal {
 public:
-    virtual std::shared_ptr<Tree<T>> get_next() {
-        std::cout << "base class" << std::endl;
+    virtual std::shared_ptr<Tree<T>> operator()() {
         return nullptr;
     }
 
 protected:
     std::stack<std::pair<std::shared_ptr<Tree<T>>, bool>> nodes_;
 };
-
+*/
 
 template<typename T>
 class Tree {
-    using tsize = T;
+    using tsize = int;
     using node_ptr = Tree<T> *;
     using node_smart_ptr = std::shared_ptr<Tree<T>>;
-    using traversal_ptr = std::shared_ptr<Traversal<T>>;
+//    using traversal_ptr = std::shared_ptr<Traversal<T>>;
+    using node_ptr_pair = std::pair<node_smart_ptr, node_smart_ptr>;
+    using traversal = std::function<void(std::function<void(T)>, node_smart_ptr)>;
 public:
     /**
      * Creates empty tree.
@@ -74,11 +76,12 @@ public:
      * @param   init value of empty node
      * @return  results of function invoked on root
      */
-    T fold(std::function<T(T, T, T)> operation, T init) const {
+    template<typename F, typename S>
+    S fold(F operation, S init) const {
         if (!is_set_) {
             return init;
         } else {
-            return operation(left_son_->fold(operation, init), right_son_->fold(operation, init), value_);
+            return operation(value_, left_son_->fold(operation, init), right_son_->fold(operation, init));
         }
     }
 
@@ -88,8 +91,31 @@ public:
      * @param   predicate function taking value of node and returning boolean
      * @return  new tree
      */
-    Tree<T> filter(std::function<bool(T)> predicate) {
-        return *this;
+    Tree filter(std::function<bool(T)> predicate) const {
+        auto lambda = [&predicate](T value, node_smart_ptr left, node_smart_ptr right) -> node_smart_ptr {
+            if (predicate(value)) {
+                return std::make_shared<Tree>(Tree(value, left, right));
+            }
+
+            if (!right->is_set_) {
+                return left;
+            }
+            else if (!left->is_set_) {
+                return right;
+            }
+            else {
+                auto leftParent = left;
+                while (leftParent->right_son_->is_set_) {
+                    leftParent = leftParent->right_son_;
+                }
+
+                leftParent->right_son_ = right;
+
+                return left;
+            }
+        };
+
+        return Tree(fold(lambda, createEmptyNode()));
     }
 
     /**
@@ -118,13 +144,26 @@ public:
      * @param traversal     function which determines traversal
      * @return              value of accumulator after traversing tree
      */
+    template<typename F, typename S>
+    S accumulate(F operation, S init, traversal traversal) const {
+        S accumulator = init;
+
+        auto lambda = [&accumulator, &operation](T value) {
+            accumulator = operation(value, accumulator);
+        };
+
+        traversal(lambda, std::make_shared<Tree<T>>(std::move(*this)));
+
+        return accumulator;
+    }
+    /*
     T accumulate(std::function<T(T, T)> operation,
                  T init,
                  std::function<traversal_ptr(node_smart_ptr)> traversal) const {
         auto tp = std::make_shared<Tree<T>>(std::move(*this));
         auto it = traversal(tp);
 
-        for (auto node = it->get_next(); node != nullptr; node = it->get_next()) {
+        for (auto node = (*it)(); node != nullptr; node = (*it)()) {
             if (node->is_set_) {
                 init = operation(node->value_, init);
             }
@@ -132,37 +171,42 @@ public:
 
         return init;
     }
-
+*/
     /**
      * Applies unary function operation to each node. Traversal of tree is given as a function.
      * @param operation     function which will be applied
      * @param traversal     function which determines traversal
      */
-    void apply(std::function<void(T)> operation, std::function<traversal_ptr(node_smart_ptr)> traversal) const {
-        auto tp = std::make_shared<Tree<T>>(std::move(*this));
-        auto it = traversal(tp);
+    /*
+   void apply(std::function<void(T)> operation, std::function<traversal_ptr(node_smart_ptr)> traversal) const {
+       auto tp = std::make_shared<Tree<T>>(std::move(*this));
+       auto it = traversal(tp);
 
-        for (auto node = it->get_next(); node != nullptr; node = it->get_next()) {
-            if (node->is_set_) {
-                operation(node->value_);
-            }
-        }
+       for (auto node = (*it)(); node != nullptr; node = (*it)()) {
+           if (node->is_set_) {
+               operation(node->value_);
+           }
+       }
+   }
+*/
+    void apply(std::function<void(T)> operation, traversal traversal) {
+        traversal(operation, std::make_shared<Tree<T>>(std::move(*this)));
     }
 
     /**
      * Gets height of tree which is maximal distance between root and leaf.
      * @return height of tree
      */
-    T height() const {
-        return fold([&](T l_height, T r_height, T val) -> T { return std::max(l_height, r_height) + 1; }, 0);
+    tsize height() const {
+        return fold([&](T value, tsize left_h, tsize right_h) -> tsize { return std::max(left_h, right_h) + 1; }, 0);
     }
 
     /**
      * Gets size of tree which is number of nodes in that tree.
      * @return size of tree
      */
-    T size() const {
-        return fold([&](T l_size, T r_size, T val) -> T { return l_size + r_size + (is_set_ ? 1 : 0); }, 0);
+    tsize size() const {
+        return fold([&](T value, tsize left_s, tsize right_s) -> tsize { return left_s + right_s + (is_set_ ? 1 : 0); }, 0);
     }
 
     /**
@@ -170,31 +214,44 @@ public:
      * @return true if tree is binary search tree
      */
     bool is_bst() const {
-        if (!is_set_) {
-            return true;
-        }
 
-        if (left_son_->is_set_ && left_son_->value_ > value_) {
-            return false;
-        }
+        auto lambda = [&](T value, bool left_bst, bool right_bst) -> bool {
+            if (left_son_->is_set_ && left_son_->value_ > value_) {
+                return false;
+            }
 
-        if (right_son_->is_set_ && right_son_->value_ < value_) {
-            return false;
-        }
+            if (right_son_->is_set_ && right_son_->value_ < value_) {
+                return false;
+            }
 
-        return left_son_->is_bst() && right_son_->is_bst();
+            return left_bst && right_bst;
+        };
+
+
+
+        return fold(lambda, true);
     }
 
     /**
      * Prints value in each node of tree in given order. By default goes in order through tree.
      * @param traversal function which determines traversal
      */
-    void print(std::function<traversal_ptr(node_smart_ptr)> traversal = inorder) const {
-        apply([](T val) { std::cout << val << " "; }, traversal);
-        std::cout << std::endl;
+    /*
+   void print(std::function<traversal_ptr(node_smart_ptr)> traversal = inorder) const {
+       apply([](T val) { std::cout << val << " "; }, traversal);
+       std::cout << std::endl;
+   }
+   */
+    void print() {
+
+    }
+
+    void print(traversal traversal1) {
+
     }
 
     //todo
+    /*
     static traversal_ptr preorder(node_smart_ptr node) {
         return std::make_shared<PreOrder>(PreOrder(node));
     }
@@ -205,6 +262,37 @@ public:
 
     static traversal_ptr postorder(node_smart_ptr node) {
         return std::make_shared<PostOrder>(PostOrder(node));
+    }
+*/
+
+    static void inorder(std::function<void(T)> operation, node_smart_ptr node) {
+        if (node == nullptr || !node->is_set_) {
+            return;
+        }
+
+        Tree::inorder(operation, node->left_son_);
+        operation(node->value_);
+        Tree::inorder(operation, node->right_son_);
+    }
+
+    static void postorder(std::function<void(T)> operation, node_smart_ptr node) {
+        if (node == nullptr || !node->is_set_) {
+            return;
+        }
+
+        Tree::postorder(operation, node->left_son_);
+        Tree::postorder(operation, node->right_son_);
+        operation(node->value_);
+    }
+
+    static void preorder(std::function<void(T)> operation, node_smart_ptr node) {
+        if (node == nullptr || !node->is_set_) {
+            return;
+        }
+
+        operation(node->value_);
+        Tree::preorder(operation, node->left_son_);
+        Tree::preorder(operation, node->right_son_);
     }
 
     /**
@@ -236,110 +324,6 @@ public:
     }
 
 private:
-    class PreOrder : public Traversal<T> {
-    public:
-        PreOrder(node_smart_ptr root) {
-            if (root != nullptr) {
-                if (root->right_son_ != nullptr) this->nodes_.push({root->right_son_, false});
-                if (root->left_son_ != nullptr) this->nodes_.push({root->left_son_, false});
-                this->nodes_.push({root, true});
-            }
-        }
-
-        PreOrder(PreOrder &&other) {
-            this->nodes_ = other.nodes_;
-        }
-
-        node_smart_ptr get_next() override {
-            if (this->nodes_.empty()) {
-                return nullptr;
-            }
-
-            auto top = this->nodes_.top();
-            this->nodes_.pop();
-            node_smart_ptr node = top.first;
-
-            if (!top.second) {
-                if (node->right_son_ != nullptr) this->nodes_.push({node->right_son_, false});
-                if (node->left_son_ != nullptr) this->nodes_.push({node->left_son_, false});
-                this->nodes_.push({node, true});
-                top = this->nodes_.top();
-                this->nodes_.pop();
-            }
-            return top.first;
-        }
-    };
-
-    class InOrder : public Traversal<T> {
-    public:
-        InOrder(node_smart_ptr root) {
-            if (root != nullptr) {
-                if (root->right_son_ != nullptr) this->nodes_.push({root->right_son_, false});
-                this->nodes_.push({root, true});
-                if (root->left_son_ != nullptr) this->nodes_.push({root->left_son_, false});
-            }
-        }
-
-        InOrder(InOrder &&other) {
-            this->nodes_ = other.nodes_;
-        }
-
-        node_smart_ptr get_next() override {
-            if (this->nodes_.empty()) {
-                return nullptr;
-            }
-
-            auto top = this->nodes_.top();
-            this->nodes_.pop();
-            node_smart_ptr node = top.first;
-
-            if (!top.second) {
-                if (node->right_son_ != nullptr) this->nodes_.push({node->right_son_, false});
-                this->nodes_.push({node, true});
-                if (node->left_son_ != nullptr) this->nodes_.push({node->left_son_, false});
-                top = this->nodes_.top();
-                this->nodes_.pop();
-            }
-
-            return top.first;
-        }
-    };
-
-    class PostOrder : public Traversal<T> {
-    public:
-        PostOrder(node_smart_ptr root) {
-            if (root != nullptr) {
-                this->nodes_.push({root, true});
-                if (root->right_son_ != nullptr) this->nodes_.push({root->right_son_, false});
-                if (root->left_son_ != nullptr) this->nodes_.push({root->left_son_, false});
-            }
-        }
-
-        PostOrder(PostOrder &&other) {
-            this->nodes_ = other.nodes_;
-        }
-
-        node_smart_ptr get_next() override {
-            if (this->nodes_.empty()) {
-                return nullptr;
-            }
-
-            auto top = this->nodes_.top();
-            this->nodes_.pop();
-            node_smart_ptr node = top.first;
-
-            if (!top.second) {
-                this->nodes_.push({node, true});
-                if (node->right_son_ != nullptr) this->nodes_.push({node->right_son_, false});
-                if (node->left_son_ != nullptr) this->nodes_.push({node->left_son_, false});
-                top = this->nodes_.top();
-                this->nodes_.pop();
-            }
-
-            return top.first;
-        }
-    };
-
     Tree(T value) : value_(value),
                     left_son_(createEmptyNode()),
                     right_son_(createEmptyNode()),
@@ -349,6 +333,16 @@ private:
                                                                left_son_(left),
                                                                right_son_(right),
                                                                is_set_(true) {}
+
+    template<typename RVal>
+    RVal fold_generic(std::function<T(RVal, RVal, T)> operation, RVal init) const {
+        if (!is_set_) {
+            return init;
+        } else {
+            return operation(left_son_->fold(operation, init), right_son_->fold(operation, init), value_);
+        }
+    }
+
 
     T value_;
     node_smart_ptr left_son_;
