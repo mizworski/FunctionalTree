@@ -44,6 +44,7 @@ public:
      * @param root root of new tree.
      */
     Tree(node_smart_ptr root) : value_(root->value_),
+                                lazy_function_(root->lazy_function_),
                                 left_son_(root->left_son_),
                                 right_son_(root->right_son_),
                                 is_set_(root->is_set_),
@@ -54,8 +55,9 @@ public:
      * @param other tree to copy
      */
     Tree(Tree const &other) : value_(other.value_),
+                              lazy_function_(other.lazy_function_),
                               is_set_(other.is_set_),
-                              is_initialized_(true) {
+                              is_initialized_(other.is_initialized_) {
         if (is_set_) {
             auto l = Tree<T>(other.left_son_);
             auto r = Tree<T>(other.right_son_);
@@ -69,10 +71,11 @@ public:
      * @param other tree to copy
      */
     Tree(Tree &&other) : value_(other.value_),
+                         lazy_function_(other.lazy_function_),
                          left_son_(other.left_son_),
                          right_son_(other.right_son_),
                          is_set_(other.is_set_),
-                         is_initialized_(true) {}
+                         is_initialized_(other.is_initialized_) {}
 
     /**
      * Invokes given operation on tree in post order traversal and returns its result.
@@ -304,18 +307,13 @@ private:
                                              left_son_(createEmptyNode()),
                                              right_son_(createEmptyNode()),
                                              is_set_(true),
-                                             is_initialized_(false) {
-        std::cout << "lazy empty" << std::endl;
-
-    }
+                                             is_initialized_(false) {}
 
     Tree(std::function<T()> lazy_function, node_smart_ptr left, node_smart_ptr right) : lazy_function_(lazy_function),
                                                                                         left_son_(left),
                                                                                         right_son_(right),
                                                                                         is_set_(true),
-                                                                                        is_initialized_(false) {
-        std::cout << "lazy empty" << std::endl;
-    }
+                                                                                        is_initialized_(false) {}
 
     static node_smart_ptr createValueNode(std::function<T()> fun) {
         return std::make_shared<Tree<T>>(Tree<T>(fun));
