@@ -7,7 +7,6 @@
 
 int main(int argc, const char *argv[]) {
     auto two = Tree<int>::createValueNode(2);
-    Tree<int> t = *two;
     auto one = Tree<int>::createValueNode(1, Tree<int>::createEmptyNode(), two);
     auto four = Tree<int>::createValueNode(4);
     auto five = Tree<int>::createValueNode(5,
