@@ -24,6 +24,7 @@ void testMap() {
     x = 10;
     t2.print();
     t3.print();
+    x=15;
     t4.print();
 
 }

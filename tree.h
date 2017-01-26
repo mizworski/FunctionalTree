@@ -153,7 +153,7 @@ public:
      * @return              value of accumulator after traversing tree
      */
     template<typename F, typename S>
-    S accumulate(F operation, S init, traversal traversal) const {
+    S accumulate(F operation, S init, traversal traversal) {
         S accumulator = init;
 
         auto lambda = [&accumulator, &operation](T value) {
@@ -170,7 +170,7 @@ public:
      * @param operation     function which will be applied
      * @param traversal     function which determines traversal
      */
-    void apply(std::function<void(T)> operation, traversal traversal) const {
+    void apply(std::function<void(T)> operation, traversal traversal) {
         traversal(operation, std::make_shared<Tree<T>>(std::move(*this)));
     }
 
@@ -219,7 +219,7 @@ public:
      * @param traversal function which determines traversal
      */
 
-    void print(traversal traversal = inorder) const {
+    void print(traversal traversal = inorder) {
         apply([](T val) { std::cout << val << " "; }, traversal);
         std::cout << std::endl;
     }
