@@ -12,10 +12,13 @@ void testMap() {
     auto three = Tree<int>::createValueNode(3, two, Tree<int>::createEmptyNode());
     Tree<int> tree(three);
 
-    auto treeDouble = tree.lazy_map([](int val) -> double { return static_cast<double>(val) / 3.0; });
-//    auto t2 = tree.lazy_map<std::function<double(int)>, double>([](int val) ->double {return static_cast<double>(val) / 3.0;});
+    double x = 3;
+
+    auto treeDouble = tree.lazy_map([&](int val) -> double { return static_cast<double>(val) / x; });
+    auto t2 = tree.lazy_map([&](int val) ->double {return static_cast<double>(val) / x;});
     treeDouble.print();
-//    t2.print();
+    x = 5;
+    t2.print();
 
 
 }

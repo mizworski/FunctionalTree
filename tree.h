@@ -113,8 +113,9 @@ public:
      * @param transformer   transforming function
      * @return              new tree
      */
-    template<typename F, typename S = typename std::result_of<F(T)>::type>
-    Tree<S> map(F const &transformer) {
+    template<typename F>
+    auto map(F const &transformer) {
+        using S = typename std::result_of<F(T)>::type;
         auto lambda = ([&](T t,
                            std::shared_ptr<Tree<S>> const &l,
                            std::shared_ptr<Tree<S>> const &r) -> std::shared_ptr<Tree<S>> {
@@ -129,8 +130,9 @@ public:
      * @param transformer   transforming function
      * @return              new tree
      */
-    template<typename F, typename S = typename std::result_of<F(T)>::type>
-    Tree<S> lazy_map(F const &transformer) {
+    template<typename F>
+    auto lazy_map(F const &transformer) {
+        using S = typename std::result_of<F(T)>::type;
         auto lambda = ([&](T t,
                            std::shared_ptr<Tree<S>> const &l,
                            std::shared_ptr<Tree<S>> const &r) -> std::shared_ptr<Tree<S>> {
@@ -317,6 +319,7 @@ public:
                                     node_ptr const &right) {
         return std::make_shared<Tree<T>>(Tree<T>(lazy_function, left, right));
     }
+
 private:
     /**
      * Creates node with empty nodes as children and given value.
@@ -358,8 +361,7 @@ private:
                                   left_son_(left),
                                   right_son_(right),
                                   is_set_(true),
-                                  is_initialized_(
-                                          false) {}
+                                  is_initialized_(false) {}
 
     /**
      * Gets value of node. Initializes that value if not initialized before.
@@ -375,10 +377,13 @@ private:
     }
 
     T value_;
+    /// Function to call in case of initialization.
     std::function<T()> lazy_function_;
     node_ptr left_son_;
     node_ptr right_son_;
+    /// Tells if value in node is set. If not then node is qualified as empty.
     bool is_set_;
+    /// Tells if value has to be initialized with function or is already initialized.
     bool is_initialized_;
 };
 
