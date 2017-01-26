@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <memory>
+#include <functional>
 
 template<typename T>
 class Tree {
@@ -127,7 +128,7 @@ public:
      * @return              new tree
      */
     template<typename F, typename S = typename std::result_of<F(T)>::type>
-    Tree<T> lazy_map(F const &transformer) {
+    Tree<S> lazy_map(F const &transformer) {
         auto lambda = ([&](T t, node_ptr const &l, node_ptr const &r) -> node_ptr {
             return Tree<S>::createValueNode(
                     [t, transformer]() -> S {

@@ -5,8 +5,39 @@
 
 #include "tree.h"
 
+void testMap() {
+
+    auto one = Tree<int>::createValueNode(1);
+    auto two = Tree<int>::createValueNode(2, one, Tree<int>::createEmptyNode());
+    auto three = Tree<int>::createValueNode(3, two, Tree<int>::createEmptyNode());
+    Tree<int> tree(three);
+
+    auto treeDouble = tree.map([](int val) -> double { return static_cast<double>(val) / 3.0; });
+    //tree.map<std::function<double(int)>, double>([](int val) ->double {return static_cast<double>(val) / 3.0;});
+    treeDouble.print();
+
+
+}
+
 int main(int argc, const char *argv[]) {
     auto two = Tree<int>::createValueNode(2);
+    Tree<int> t1(two);
+    auto xx = Tree<int>::createValueNode(50, Tree<int>::createEmptyNode(), Tree<int>::createEmptyNode());
+    Tree<int> t2(xx);
+
+    t1.print(Tree<int>::inorder);
+    t2.print(Tree<int>::inorder);
+
+
+    std::cout << "size: " << t1.size() << std::endl;
+    std::cout << "height: " << t1.height() << std::endl;
+    std::cout << "bst: " << t1.is_bst() << std::endl;
+
+
+    std::cout << "size: " << t2.size() << std::endl;
+    std::cout << "height: " << t2.height() << std::endl;
+    std::cout << "bst: " << t2.is_bst() << std::endl;
+
     auto one = Tree<int>::createValueNode(1, Tree<int>::createEmptyNode(), two);
     auto four = Tree<int>::createValueNode(4);
     auto five = Tree<int>::createValueNode(5,
@@ -45,6 +76,8 @@ int main(int argc, const char *argv[]) {
 
     int sum2 = tree.fold([](int val, int l, int r) -> int { return val + l + r; }, 0);
     std::cout << "sum: " << sum2 << std::endl;
+
+    testMap();
 
     return 42;
 }
