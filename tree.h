@@ -27,7 +27,7 @@ class Tree {
     using node_ptr = Tree<T> *;
     using node_smart_ptr = std::shared_ptr<Tree<T>>;
 //    using traversal_ptr = std::shared_ptr<Traversal<T>>;
-    using node_ptr_pair = std::pair<node_smart_ptr, node_smart_ptr>;
+//    using node_ptr_pair = std::pair<node_smart_ptr, node_smart_ptr>;
     using traversal = std::function<void(std::function<void(T)>, node_smart_ptr)>;
 public:
     /**
@@ -99,11 +99,9 @@ public:
 
             if (!right->is_set_) {
                 return left;
-            }
-            else if (!left->is_set_) {
+            } else if (!left->is_set_) {
                 return right;
-            }
-            else {
+            } else {
                 auto leftParent = left;
                 while (leftParent->right_son_->is_set_) {
                     leftParent = leftParent->right_son_;
@@ -123,8 +121,12 @@ public:
      * @param transformer   transforming function
      * @return              new tree
      */
-    Tree<T> map(std::function<T(T)> transformer) {
-        return *this;
+    template<typename F, typename U = typename std::result_of<F(T)>::type>
+    Tree<U> map(F transformer) {
+        auto operation = ([&](T t, node_smart_ptr l, node_smart_ptr r) -> node_smart_ptr {
+                    return Tree<U>::createValueNode(transformer(t), l, r);
+                });
+        return Tree<U>(fold(operation, Tree<U>::createEmptyNode()));
     }
 
     /**
@@ -156,40 +158,13 @@ public:
 
         return accumulator;
     }
-    /*
-    T accumulate(std::function<T(T, T)> operation,
-                 T init,
-                 std::function<traversal_ptr(node_smart_ptr)> traversal) const {
-        auto tp = std::make_shared<Tree<T>>(std::move(*this));
-        auto it = traversal(tp);
 
-        for (auto node = (*it)(); node != nullptr; node = (*it)()) {
-            if (node->is_set_) {
-                init = operation(node->value_, init);
-            }
-        }
-
-        return init;
-    }
-*/
     /**
      * Applies unary function operation to each node. Traversal of tree is given as a function.
      * @param operation     function which will be applied
      * @param traversal     function which determines traversal
      */
-    /*
-   void apply(std::function<void(T)> operation, std::function<traversal_ptr(node_smart_ptr)> traversal) const {
-       auto tp = std::make_shared<Tree<T>>(std::move(*this));
-       auto it = traversal(tp);
-
-       for (auto node = (*it)(); node != nullptr; node = (*it)()) {
-           if (node->is_set_) {
-               operation(node->value_);
-           }
-       }
-   }
-*/
-    void apply(std::function<void(T)> operation, traversal traversal) {
+    void apply(std::function<void(T)> operation, traversal traversal) const {
         traversal(operation, std::make_shared<Tree<T>>(std::move(*this)));
     }
 
@@ -206,7 +181,8 @@ public:
      * @return size of tree
      */
     tsize size() const {
-        return fold([&](T value, tsize left_s, tsize right_s) -> tsize { return left_s + right_s + (is_set_ ? 1 : 0); }, 0);
+        return fold([&](T value, tsize left_s, tsize right_s) -> tsize { return left_s + right_s + (is_set_ ? 1 : 0); },
+                    0);
     }
 
     /**
@@ -227,8 +203,6 @@ public:
             return left_bst && right_bst;
         };
 
-
-
         return fold(lambda, true);
     }
 
@@ -236,34 +210,11 @@ public:
      * Prints value in each node of tree in given order. By default goes in order through tree.
      * @param traversal function which determines traversal
      */
-    /*
-   void print(std::function<traversal_ptr(node_smart_ptr)> traversal = inorder) const {
-       apply([](T val) { std::cout << val << " "; }, traversal);
-       std::cout << std::endl;
-   }
-   */
-    void print() {
 
+    void print(traversal traversal = inorder) const {
+        apply([](T val) { std::cout << val << " "; }, traversal);
+        std::cout << std::endl;
     }
-
-    void print(traversal traversal1) {
-
-    }
-
-    //todo
-    /*
-    static traversal_ptr preorder(node_smart_ptr node) {
-        return std::make_shared<PreOrder>(PreOrder(node));
-    }
-
-    static traversal_ptr inorder(node_smart_ptr node) {
-        return std::make_shared<InOrder>(InOrder(node));
-    }
-
-    static traversal_ptr postorder(node_smart_ptr node) {
-        return std::make_shared<PostOrder>(PostOrder(node));
-    }
-*/
 
     static void inorder(std::function<void(T)> operation, node_smart_ptr node) {
         if (node == nullptr || !node->is_set_) {
